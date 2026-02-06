@@ -1,16 +1,16 @@
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
-SESSION = os.getenv("SESSION_STRING")
+SESSION_STRING = os.getenv("SESSION_STRING")
+
+if not SESSION_STRING:
+    raise RuntimeError("SESSION_STRING is missing!")
 
 client = TelegramClient(
-    StringSession(SESSION),
+    StringSession(SESSION_STRING),
     API_ID,
     API_HASH
 )
@@ -21,6 +21,11 @@ async def ping_handler(event):
     await event.reply("pong ✅")
 
 
-print("Userbot is starting with StringSession...")
-client.start()
+async def main():
+    await client.connect()
+    print("✅ Userbot is running")
+
+
+import asyncio
+asyncio.run(main())
 client.run_until_disconnected()

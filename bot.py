@@ -1,10 +1,11 @@
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
-from telethon.tl.types import InputMessagesFilterVideo
+from telethon.tl.types import InputMessagesFilterVideo,InputMediaPhoto
 import os
 import re
 import cv2
 import asyncio
+import random
 
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
@@ -70,10 +71,26 @@ async def extract_and_send_frames(event, video_path, frames_count):
     cap.release()
 
     # ارسال فریم‌ها (مثلا فقط 5 فریم اول برای نمونه)
-    for fp in frame_paths[:5]:
+    
+    # ارسال فریم‌ها به صورت رندوم (۱۰ تا یا کمتر)
+    num_to_send = min(10, len(frame_paths))  # حداکثر ۱۰ فریم
+    selected_frames = random.sample(frame_paths, num_to_send)
+
+    for fp in selected_frames:
         await event.reply(file=fp)
 
-    await event.reply(f"✅ استخراج فریم‌ها کامل شد!\nتعداد استخراج شده: {len(frame_paths)}")
+    media_group = [InputMediaPhoto(fp) for fp in selected_frames]
+
+    # کپشن برای گروه
+    caption_text = f"✅ استخراج فریم‌ها کامل شد!\nتعداد استخراج شده: {len(frame_paths)}"
+
+# ارسال به صورت گروهی
+    await client.send_file(
+        event.chat_id,
+        files=selected_frames,
+        caption=caption_text,
+        reply_to=event.reply_to_msg_id,  # ریپلای روی ویدیوی اصلی
+        force_document=False  # یعنی عکس‌ها به عنوان عکس ارسال می‌شوند نه فایل
 @client.on(events.NewMessage(pattern=r'^/frames\s+(\d+)$'))
 async def frames_handler(event):
     # فقط خودت

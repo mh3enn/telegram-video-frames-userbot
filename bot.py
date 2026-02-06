@@ -1,5 +1,6 @@
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
+from telethon.tl.types import InputMessagesFilterVideo
 import os
 import re
 import asyncio
@@ -17,6 +18,25 @@ client = TelegramClient(
     API_ID,
     API_HASH
 )
+async def download_with_progress(event, video_message, frames):
+    # پیام اولیه
+    status_msg = await event.reply(f"⏳ در حال دانلود ویدیو برای {frames} فریم... 0%")
+
+    def progress(current, total):
+        percent = int(current * 100 / total)
+        # هر 10٪ یک بار آپدیت کنیم
+        if percent % 10 == 0:
+            # edit کردن پیام تلگرام
+            try:
+                client.loop.create_task(
+                    status_msg.edit(f"⏳ در حال دانلود ویدیو برای {frames} فریم... {percent}%")
+                )
+            except:
+                pass
+
+    path = await client.download_media(video_message, progress_callback=progress)
+    await status_msg.edit(f"✅ دانلود کامل شد!\nمسیر: `{path}`")
+    return path
 @client.on(events.NewMessage(pattern=r'^/frames\s+(\d+)$'))
 async def frames_handler(event):
     # فقط خودت
@@ -42,13 +62,11 @@ async def frames_handler(event):
         await event.reply("❌ تعداد فریم باید بین 1 تا 50 باشه")
         return
 
-    await event.reply(f"⏳ در حال دانلود ویدیو برای {frames_count} فریم...")
-
     # ساخت پوشه
     os.makedirs("downloads", exist_ok=True)
 
-    # دانلود ویدیو
-    video_path = await reply.download_media(file="downloads/video.mp4")
+    # دانلود ویدیو با نمایش درصد
+    video_path = await download_with_progress(event, reply, frames_count)
 
     await event.reply(
         f"✅ ویدیو دانلود شد\n"

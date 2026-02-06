@@ -79,8 +79,6 @@ async def extract_and_send_frames(event, video_path, frames_count):
     for fp in selected_frames:
         await event.reply(file=fp)
 
-    media_group = [InputMediaPhoto(fp) for fp in selected_frames]
-
     # کپشن برای گروه
     caption_text = f"✅ استخراج فریم‌ها کامل شد!\nتعداد استخراج شده: {len(frame_paths)}"
 
@@ -91,6 +89,15 @@ async def extract_and_send_frames(event, video_path, frames_count):
         caption=caption_text,
         reply_to=event.reply_to_msg_id,  # ریپلای روی ویدیوی اصلی
         force_document=False  # یعنی عکس‌ها به عنوان عکس ارسال می‌شوند نه فایل
+    )
+    # حذف فایل‌ها از سرور بعد از ارسال
+    try:
+        for fp in frame_paths:
+            os.remove(fp)
+        os.remove(video_path)
+        await event.reply(f"🗑 فایل‌ها با موفقیت پاک شدند!", reply_to=event.reply_to_msg_id)
+    except Exception as e:
+          await event.reply(f"⚠ خطا در پاک کردن فایل‌ها: {e}", reply_to=event.reply_to_msg_id)
 @client.on(events.NewMessage(pattern=r'^/frames\s+(\d+)$'))
 async def frames_handler(event):
     # فقط خودت

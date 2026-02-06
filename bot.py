@@ -30,14 +30,12 @@ async def download_with_progress(event, video_message, frames):
         # فقط وقتی درصد تغییر کرده پیام رو ادیت کن
         if percent != last_percent:
             last_percent = percent
-            try:
-                client.loop.create_task(
-                    status_msg.edit(f"⏳ در حال دانلود ویدیو برای {frames} فریم... {percent}%")
-                )
-            except telethon.errors.rpcerrorlist.MessageNotModifiedError:
-                pass
-            except Exception as e:
-                print(f"Warning: {e}")  # هر ارور دیگه رو چاپ می‌کنیم
+            async def safe_edit():
+                try:
+                    await status_msg.edit(f"⏳ در حال دانلود ویدیو برای {frames} فریم... {percent}%")
+                except telethon.errors.rpcerrorlist.MessageNotModifiedError:
+                    pass
+            asyncio.create_task(safe_edit())
 
     path = await client.download_media(video_message, progress_callback=progress)
     await status_msg.edit(f"✅ دانلود کامل شد!\nمسیر: `{path}`")

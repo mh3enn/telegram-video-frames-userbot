@@ -3,6 +3,7 @@ from telethon.sessions import StringSession
 from telethon.tl.types import InputMessagesFilterVideo
 import os
 import re
+import cv2
 import asyncio
 
 API_ID = int(os.getenv("API_ID"))
@@ -37,6 +38,40 @@ async def download_with_progress(event, video_message, frames):
     path = await client.download_media(video_message, progress_callback=progress)
     await status_msg.edit(f"✅ دانلود کامل شد!\nمسیر: `{path}`")
     return path
+async def extract_and_send_frames(event, video_path, frames_count):
+    # پوشه فریم‌ها
+    os.makedirs("frames", exist_ok=True)
+
+    # باز کردن ویدیو
+    cap = cv2.VideoCapture(video_path)
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    if total_frames == 0:
+        await event.reply("❌ ویدیو خالی یا نامعتبر است!")
+        return
+
+    # فاصله بین فریم‌ها
+    step = max(1, total_frames // frames_count)
+    
+    frame_paths = []
+    for i in range(0, total_frames, step):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        
+        frame_file = f"frames/frame_{i}.jpg"
+        cv2.imwrite(frame_file, frame)
+        frame_paths.append(frame_file)
+        # می‌تونی اینجا پیام کوتاه برای پیشرفت ارسال کنی اگر خواستی
+    
+    cap.release()
+
+    # ارسال فریم‌ها (مثلا فقط 5 فریم اول برای نمونه)
+    for fp in frame_paths[:5]:
+        await event.reply(file=fp)
+
+    await event.reply(f"✅ استخراج فریم‌ها کامل شد!\nتعداد استخراج شده: {len(frame_paths)}")
 @client.on(events.NewMessage(pattern=r'^/frames\s+(\d+)$'))
 async def frames_handler(event):
     # فقط خودت
@@ -67,12 +102,8 @@ async def frames_handler(event):
 
     # دانلود ویدیو با نمایش درصد
     video_path = await download_with_progress(event, reply, frames_count)
-
-    await event.reply(
-        f"✅ ویدیو دانلود شد\n"
-        f"📁 مسیر: `{video_path}`\n"
-        f"🎞 فریم درخواستی: {frames_count}"
-    )
+    # استخراج و ارسال فریم‌ها
+    await extract_and_send_frames(event, video_path, frames_count)
 @client.on(events.NewMessage(pattern=r'^/ping$'))
 async def ping_handler(event):
     await event.reply("pong ✅")

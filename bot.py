@@ -1,6 +1,7 @@
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 import os
+import asyncio
 
 API_ID = int(os.getenv("API_ID"))
 API_HASH = os.getenv("API_HASH")
@@ -24,8 +25,7 @@ async def ping_handler(event):
 async def main():
     await client.connect()
     print("✅ Userbot is running")
+    await client.run_until_disconnected()
 
 
-import asyncio
 asyncio.run(main())
-client.run_until_disconnected()

@@ -75,10 +75,7 @@ async def extract_and_send_frames(event, video_path, frames_count):
     # ارسال فریم‌ها به صورت رندوم (۱۰ تا یا کمتر)
     num_to_send = min(10, len(frame_paths))  # حداکثر ۱۰ فریم
     selected_frames = random.sample(frame_paths, num_to_send)
-
-    for fp in selected_frames:
-        await event.reply(file=fp)
-
+    
     # کپشن برای گروه
     caption_text = f"✅ استخراج فریم‌ها کامل شد!\nتعداد استخراج شده: {len(frame_paths)}"
 
